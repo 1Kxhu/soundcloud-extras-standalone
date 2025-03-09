@@ -1,9 +1,12 @@
 > [!CAUTION]
-> USE AT OWN RISK
-> 
-> USE AT OWN RISK
-> 
-> USE AT OWN RISK
+> # USE AT OWN RISK
+
+> [!IMPORTANT]  
+> Repository will **NOT** be updated regularly.
+>
+> Issues will **NOT** be looked at.
+>
+> Pull requests will **NOT** be looked at.
 
 A C# WinForms WebView2 setup which retrieves data and creates new webpage elements using javascript.
 
