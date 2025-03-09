@@ -1,4 +1,6 @@
-﻿namespace soundcloud_rpc
+﻿using System.Reflection.Emit;
+
+namespace soundcloud_rpc
 {
     partial class Form1
     {
@@ -29,9 +31,11 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.webView21 = new Microsoft.Web.WebView2.WinForms.WebView2();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.cuiLabel1 = new CuoreUI.Controls.cuiLabel();
+            this.cuiLabel1 = new System.Windows.Forms.Label();
+            this.timer2 = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.webView21)).BeginInit();
             this.SuspendLayout();
             // 
@@ -58,24 +62,29 @@
             // 
             // cuiLabel1
             // 
-            this.cuiLabel1.Content = "You\\ might\\ be\\ asked\\ to\\ log-in\\ to\\ use\\ SoundCloud\\ RPC\\ in\\ it\'s\\ full\\ pote" +
-    "ntial\\.";
             this.cuiLabel1.ForeColor = System.Drawing.Color.Gray;
-            this.cuiLabel1.HorizontalAlignment = CuoreUI.Controls.cuiLabel.HorizontalAlignments.Left;
             this.cuiLabel1.Location = new System.Drawing.Point(0, 2);
             this.cuiLabel1.Name = "cuiLabel1";
-            this.cuiLabel1.Size = new System.Drawing.Size(800, 15);
+            this.cuiLabel1.Size = new System.Drawing.Size(800, 14);
             this.cuiLabel1.TabIndex = 1;
+            this.cuiLabel1.Text = "You might be asked to log-in to use SoundCloud RPC in it\'s full potential";
+            // 
+            // timer2
+            // 
+            this.timer2.Enabled = true;
+            this.timer2.Interval = 1000;
+            this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1097, 665);
-            this.Controls.Add(this.webView21);
             this.Controls.Add(this.cuiLabel1);
+            this.Controls.Add(this.webView21);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
-            this.Text = "Unofficial SoundCloud RPC for Discord Client";
+            this.Text = "SoundCloud (Unofficial Client)";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form1_FormClosed);
             ((System.ComponentModel.ISupportInitialize)(this.webView21)).EndInit();
             this.ResumeLayout(false);
@@ -86,7 +95,8 @@
 
         private Microsoft.Web.WebView2.WinForms.WebView2 webView21;
         private System.Windows.Forms.Timer timer1;
-        private CuoreUI.Controls.cuiLabel cuiLabel1;
+        private System.Windows.Forms.Label cuiLabel1;
+        private System.Windows.Forms.Timer timer2;
     }
 }
 

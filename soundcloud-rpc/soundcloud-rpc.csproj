@@ -34,10 +34,10 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>soundcloud-black.png.ico.pixelated.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CuoreUI">
-      <HintPath>..\..\wfcl1\wfcl1\bin\Release\net472\CuoreUI.dll</HintPath>
-    </Reference>
     <Reference Include="DiscordRPC, Version=1.2.1.24, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\DiscordRichPresence.1.2.1.24\lib\net45\DiscordRPC.dll</HintPath>
     </Reference>
@@ -87,6 +87,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
@@ -101,6 +102,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="sidebar.js" />
+    <Content Include="soundcloud-black.png.ico.pixelated.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Web.WebView2.1.0.3065.39\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.3065.39\build\Microsoft.Web.WebView2.targets')" />
