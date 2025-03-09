@@ -117,7 +117,7 @@ function CreateCustomButton() {
     appSidebar.style.height = "calc(-127px + 100vh)";
     appSidebar.style.right = "0";
     appSidebar.style.top = "46px";
-    appSidebar.style.zIndex = "1005";
+    appSidebar.style.zIndex = "1000";
     appSidebar.style.padding = "16px";
     appSidebar.style.display = "flex";
     appSidebar.style.flexDirection = "column";
