@@ -163,6 +163,7 @@ function CreateCustomButton() {
     headerElement.style.marginTop = "10px";
     headerElement.style.marginRight = "6px"
     headerElement.style.paddingRight = "24px";
+    headerElement.style.overflowWrap = "break-word";
     appSidebar.appendChild(headerElement);
 
     // Create description text
