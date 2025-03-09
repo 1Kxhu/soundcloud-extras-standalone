@@ -4,18 +4,78 @@ let imgElement;
 let headerElement;
 let descriptionElement;
 let blurredImgElement;
+let actualDescriptionContent;
+let wantedDescriptionContent;
+let lastKnownTrackId = "";
+let timesUpdated = 1;
+
+let should = false;
+
+function UpdateDescriptionContent(content) {
+    console.log(`ordered to update description to with length ${content.length}`);
+    wantedDescriptionContent = content;
+    actualDescriptionContent.innerText = content;
+    return "updated";
+}
 
 function GetSoundcloudLikeButton() {
     return document.getElementsByClassName("sc-button-like playbackSoundBadge__like sc-button-secondary sc-mr-1x sc-button sc-button-small sc-button-icon sc-button-responsive")[0];
 }
 
+let trackId;
+let clientId;
+
+function SetData(newTrackId, newClientId) {
+    trackId = newTrackId;
+    clientId = newClientId;
+}
+
+async function updateSidepanelDescriptionContent() {
+    if (!trackId || !clientId) {
+        console.log("trackId empty || clientId empty");
+        setTimeout(updateSidepanelDescriptionContent, 500);
+        return;
+    }
+
+    console.log("updating description.");
+
+    let trackUri = `https://api-v2.soundcloud.com/tracks/${trackId}?user_id=1&client_id=${clientId}`;
+    console.log(trackUri);
+
+    try {
+        let response = await fetch(trackUri);
+        if (!response.ok) throw new Error("Failed to fetch track data");
+        let data = await response.json();
+
+        console.log("fetched description");
+        let trackDescription = data.description || "";
+
+        async function updateDescription() {
+            let result = UpdateDescriptionContent(trackDescription);
+            if (result === "updated") {
+                console.log("UPDATED description.");
+            } else {
+                console.log("FAILED to update description, retrying..");
+                setTimeout(updateDescription, 1000);
+            }
+        }
+
+        updateDescription();
+    } catch (error) {
+        console.error("Error fetching track description:", error);
+    }
+}
+
+
 function ToggleSidepanel() {
     if (appSidebar) {
         if (appSidebar.style.display == "none") {
             appSidebar.style.display = "block";
+            sidebarToggleButton.style.filter = "brightness(1)"
         }
         else {
             appSidebar.style.display = "none";
+            sidebarToggleButton.style.filter = "brightness(0)"
         }
     }
 }
@@ -26,15 +86,17 @@ function CreateCustomButton() {
         return;
     }
 
+    should = true;
     customButtonInCreation = true;
 
     sidebarToggleButton = document.createElement("button");
+    sidebarToggleButton.title = "Now playing view"
     sidebarToggleButton.style.width = "20px";
     sidebarToggleButton.style.height = "20px";
     sidebarToggleButton.style.background = "none";
     sidebarToggleButton.style.border = "none";
     sidebarToggleButton.style.backgroundRepeat = "no-repeat";
-    sidebarToggleButton.style.backgroundImage = "url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAGjSURBVDhPhZO/qhpBFMZ/544YNCRcFkzEbSxFsTmd2Aa0MEVewDaFhW0eIXmEVIIgliGXW1jEbdMtiigprYRoE5IoRO64aWYTdjXxgynOme/PwJkjqgpQAd4CL4DH/B974BPwBvgiqloBPgO3aeYVfAMaNy75FrgDioBcOUXgo9O8E1X96Z5dBL46d1Ov1+Mku1qtsNb+zYZnjrsXVY1cUwCMMXS7XQaDAYVCgdFoxGKxAKBWq9Fut2OTCOAmrhwMYETkwREegF9ANgxDACaTSUKQNgBgs9kAsNvtTKvVys7n8x+z2SzrAhI4M7DWsl6v/9RRFDEcDrPL5fIAHBLkSwb/goiYIAgIgiDRPzOoVCqUy+V0247H46Pv+098309cnBkYYyiVSgB4nmd7vd6x2WzmM5lMPpfLHdP8tIHdbrcWyLixZoBHwBGwnufR7/cTAlHVPZAHngNbwHQ6HQA7nU6pVquEYYiIcDqdYl3BcQ+iqnfAS+AD8BrYiQhRFP+vMxSA98Ar4F5UteqW6WmaeQXf42VaAQ3g/tKcL+DguA1g9RvkvXvll3I4BgAAAABJRU5ErkJggg==\")";
+    sidebarToggleButton.style.backgroundImage = "url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsIAAA7CARUoSoAAAAEqSURBVDhPldO9alRBGMbx35zGFYx23kJuIPEWbAKBxSnXVMFKwgrqNRgStBUsIimHlYTcQEjp7j14DSaCKxaTYudkD8PmuP6bmXnneZ53zscEhRztYoxneNjWK37jOz6G5ByChfkD3tXqf3AUkrehdD7DH7zHSUh+1mqLRk+wh0M8wFCOLnOUc3RQG+4jR6+L56opzwwnHcHTpXwlX8u43bQvrDr25xxd5GirU7sjJNdlOmiqvS47mPYFQV9AS2/QOgEtz/EqR4+6xXUC/uILNkOyH5Jf3c2+gNr4oxYoAXOLT/e4U//WZ8zRRpnOG0zL4mUrCMnpKmOHURlnIUdDTMqv/AanIbmpDCw7j3CMAV60l+m4mP+HTyEZh3ZVTjLGVklfxRyzYp7ALWnRXbaGEejMAAAAAElFTkSuQmCC\")";
     sidebarToggleButton.style.margin = "4px";
     sidebarToggleButton.style.marginTop = "3px";
     sidebarToggleButton.style.marginRight = "0px";
@@ -126,8 +188,8 @@ function CreateCustomButton() {
     secondaryLikeButton.style.backgroundPosition = "center";
     secondaryLikeButton.style.transform = "scale(1.7)";
 
-    function updateSecondaryLikeButton()
-    {
+    function updateSecondaryLikeButton() {
+        secondaryLikeButton.title = likeBtn.title;
         if (likeBtn.classList.contains("sc-button-selected")) {
             secondaryLikeButton.style.filter = "saturate(1)";
             secondaryLikeButton.style.opacity = "1";
@@ -149,6 +211,48 @@ function CreateCustomButton() {
     });
 
     appSidebar.appendChild(secondaryLikeButton);
+
+    let style = document.createElement("style");
+    style.innerHTML = `
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        ::-webkit-scrollbar-corner {
+            background: rgba(0, 0, 0, 0.15);
+        }
+    `;
+    document.head.appendChild(style);
+
+
+    const descriptionWrapper = document.createElement("div");
+    descriptionWrapper.style.maxHeight = "200px"; // Adjust as needed
+    descriptionWrapper.style.overflowY = "auto";
+    descriptionWrapper.style.paddingRight = "8px"; // Prevents scrollbar overlap
+    descriptionWrapper.style.backgroundColor = "rgba(0, 0, 0, 0.1)";
+    descriptionWrapper.style.borderTop = "1px solid rgba(128,128,128,0.25)"
+    descriptionWrapper.style.borderRadius = "5px";
+
+    actualDescriptionContent = document.createElement("p");
+    actualDescriptionContent.style.whiteSpace = "pre-wrap";
+    actualDescriptionContent.innerText = wantedDescriptionContent;
+    actualDescriptionContent.style.marginTop = "2px";
+    actualDescriptionContent.style.color = "rgba(255, 255, 255, 0.66)"
+    actualDescriptionContent.style.fontWeight = "lighter";
+    actualDescriptionContent.style.padding = "1px 4px 4px 4px";
+    descriptionWrapper.appendChild(actualDescriptionContent);
+
+    appSidebar.appendChild(descriptionWrapper);
 
     customButtonInCreation = false;
 }

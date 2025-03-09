@@ -1,10 +1,18 @@
-﻿using soundcloud_rpc.Properties;
+﻿using Microsoft.Web.WebView2.Core;
+using Newtonsoft.Json;
+using soundcloud_rpc.Properties;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Runtime.Remoting.Messaging;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrackBar;
 
 namespace soundcloud_rpc
 {
@@ -43,6 +51,27 @@ namespace soundcloud_rpc
 
         bool initialized = false;
         List<string> lastKnownData = new List<string>();
+
+        private void CoreWebView2_WebResourceRequested(object sender, CoreWebView2WebResourceRequestedEventArgs e)
+        {
+            // Get the request object
+            var request = e.Request;
+
+            // Get the URI of the request
+            string uri = request.Uri;
+
+            // Optionally, read the request's content
+            // The request's body can be accessed if the method is POST (or others)
+            if (request.Method == "POST")
+            {
+                var content = new System.IO.StreamReader(request.Content).ReadToEnd();
+                MessageBox.Show($"POST Request to {uri} with content: {content}");
+            }
+            else
+            {
+                MessageBox.Show($"Request to {uri}");
+            }
+        }
 
         private async void timer1_Tick(object sender, EventArgs e)
         {
@@ -95,6 +124,7 @@ namespace soundcloud_rpc
                 // Means we can finally display the Discord rich presence
                 if (initialized)
                 {
+                    // when running with debugger, sidebar is always going to be updated in /bin/
                     if (!Debugger.IsAttached && File.Exists(GetFilePathFromCurrentDirectory("assets/sidebar.js")))
                     {
                         await ExecuteScript(LoadScriptFromFile("assets/sidebar.js"));
@@ -113,7 +143,6 @@ namespace soundcloud_rpc
 
                 return;
             }
-
 
             // shared (NORMAL and MODAL)
             bool isModal = await ExecuteScript("IsModal()") == "true";
@@ -225,6 +254,203 @@ namespace soundcloud_rpc
             else if (customBtnResult == "false")
             {
                 await ExecuteScript("CreateCustomButton()");
+            }
+
+            if (await ExecuteScript("should == true") == "true")
+            {
+                await ExecuteScript($"should = false;\nSetData({trackId}, {clientId})");
+                
+                UpdateSidepanelDescriptionContent();
+            }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            InitializeFetchXHRIntercept();
+        }
+
+        private async void InitializeFetchXHRIntercept()
+        {
+            await webView21.EnsureCoreWebView2Async();
+
+            // javascript intercepts Fetch and XHR requests (check WebMessageReceived)
+            string script = @"
+        // Intercept fetch requests
+        const originalFetch = fetch;
+        window.fetch = function(url, options) {
+            window.chrome.webview.postMessage({type: 'fetch', url: url, method: options?.method, body: options?.body});
+            return originalFetch(url, options);
+        };
+
+        // Intercept XMLHttpRequest requests
+        const originalXHR = XMLHttpRequest;
+        XMLHttpRequest = function() {
+            const xhr = new originalXHR();
+            const originalOpen = xhr.open;
+            xhr.open = function(method, url, async, user, password) {
+                xhr.addEventListener('readystatechange', function() {
+                    if (xhr.readyState === 4) {
+                        window.chrome.webview.postMessage({type: 'xhr', url: url, method: method, response: xhr.responseText});
+                    }
+                });
+                originalOpen.apply(xhr, arguments);
+            };
+            return xhr;
+        };
+    ";
+
+            await webView21.CoreWebView2.ExecuteScriptAsync(script);
+
+            // Handle messages sent from the JavaScript
+            webView21.CoreWebView2.WebMessageReceived += WebMessageReceived;
+        }
+
+        string trackDescription = "";
+        string clientId = "";
+        string trackId = "";
+
+        private async void WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            var message = e.WebMessageAsJson;
+
+            // parse the message (intercepted, check InitializeFetchXHRIntercept)
+            dynamic data = Newtonsoft.Json.JsonConvert.DeserializeObject(message);
+            if (data.type == "xhr")
+            {
+                // The track id can be found in XHR requests
+                string url = data.url;
+                string method = data.method;
+                string response = data.response;
+
+                if (method == "GET")
+                {
+                    if (url.StartsWith("https://api-v2.soundcloud.com/me"))
+                    {
+                        await ExecuteScript("console.log('(C#) intercepted XHR GET api-v2 /me* request');");
+
+                        // find the track_id using regex
+                        // if cannot find in response, try url
+                        async Task<bool> matchFromString(string inputString)
+                        {
+                            var trackIdMatch = System.Text.RegularExpressions.Regex.Match(inputString, "https://api-v2.soundcloud.com/media/soundcloud:tracks:(\\d+)");
+
+                            if (trackIdMatch.Success)
+                            {
+                                trackId = trackIdMatch.Groups[1].Value;
+                                await ExecuteScript($"console.log('(C#) NEW TRACKID {trackId}');\ntrackId = '{trackId}';");
+
+                                if (trackId != trackIdMatch.Groups[1].Value)
+                                {
+                                    await ExecuteScript("console.log('(C#) told to update description');");
+                                    UpdateSidepanelDescriptionContent();
+                                }
+                                else
+                                {
+                                    await ExecuteScript("console.log('(C#) trackId is the same as last one');");
+                                }
+
+                                return false;
+                            }
+                            else
+                            {
+                                await ExecuteScript("console.log('(C#) no trackId found in the request.');");
+                                return true;
+                            }
+                        }
+
+                        if (await matchFromString(response))
+                        {
+                            await matchFromString(url);
+                        }
+                    }
+                }
+
+                var clientIdMatch = System.Text.RegularExpressions.Regex.Match(url, "client_id=(\\w+)&");
+                if (clientIdMatch.Success)
+                {
+                    clientId = clientIdMatch.Groups[1].Value;
+                }
+            }
+        }
+
+        private async void UpdateSidepanelDescriptionContent()
+        {
+            if (trackId == "" || clientId == "")
+            {
+                await ExecuteScript("console.log('(C#) trackId empty || clientId empty');");
+                await Task.Delay(500);
+                UpdateSidepanelDescriptionContent();
+                return;
+            }
+
+            await ExecuteScript($"SetData('{trackId}', '{clientId}')");
+
+            await ExecuteScript("updateSidepanelDescriptionContent();");
+
+            return;
+
+            // Construct the URI for the track
+            // HERE WE GET THE DESCRIPTION BY MAKING A REQUEST TO API-V2
+            // THIS IS NOT SUPPORTED BY SOUNDCLOUD, undocumented
+            string trackUri = $"https://api-v2.soundcloud.com/tracks/{trackId}?user_id=1&client_id={clientId}";
+
+            // JSON response
+            string newConstructedUriResponse = await SendRequestGET(trackUri);
+
+            if (Debugger.IsAttached)
+            {
+                File.WriteAllText("trackUriResponse.txt", newConstructedUriResponse);
+                //MessageBox.Show(newConstructedUriResponse);
+            }
+
+            var trackDescriptionMatch = System.Text.RegularExpressions.Regex.Match(newConstructedUriResponse, "\"description\":\"(.*?)\"");
+            if (trackDescriptionMatch.Success)
+            {
+                trackDescription = trackDescriptionMatch.Groups[1].Value;
+            }
+            else
+            {
+                trackDescription = "";
+            }
+
+            async void UpdateDescription()
+            {
+                if (await ExecuteScript($"UpdateDescriptionContent(`{trackDescription}`);") == "updated")
+                {
+                    await ExecuteScript("console.log('(C#) UPDATED description.');");
+                }
+                else
+                {
+                    await ExecuteScript("console.log('(C#) FAILED to Update description, retrying..');");
+                    await Task.Delay(1000);
+                    UpdateDescription();
+                }
+            }
+
+            UpdateDescription();
+        }
+
+        private async Task<string> SendRequestGET(string uri)
+        {
+            await ExecuteScript($"console.log('(C#) sending request to {uri}\nin hopes of getting a description!');");
+            using (WebClient client = new WebClient())
+            {
+                client.Encoding = System.Text.Encoding.UTF8;
+                // Optionally, you can add headers if required
+                client.Headers.Add("User-Agent", "Mozilla/5.0");
+
+                // Download the response asynchronously
+                string result;
+                try
+                {
+                    result = await client.DownloadStringTaskAsync(uri);
+                }
+                catch
+                {
+                    result = "";
+                }
+
+                return result;
             }
         }
     }

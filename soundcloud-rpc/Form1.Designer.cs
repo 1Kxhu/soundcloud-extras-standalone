@@ -86,6 +86,7 @@ namespace soundcloud_rpc
             this.Name = "Form1";
             this.Text = "SoundCloud (Unofficial Client)";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form1_FormClosed);
+            this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.webView21)).EndInit();
             this.ResumeLayout(false);
 
