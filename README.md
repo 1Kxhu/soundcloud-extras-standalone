@@ -1,3 +1,10 @@
+> [!CAUTION]
+> USE AT OWN RISK
+> 
+> USE AT OWN RISK
+> 
+> USE AT OWN RISK
+
 A C# WinForms WebView2 setup which retrieves data and creates new webpage elements using javascript.
 
 ## features so far:
