@@ -1,18 +1,12 @@
 ﻿using Microsoft.Web.WebView2.Core;
-using Newtonsoft.Json;
 using soundcloud_rpc.Properties;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Runtime.Remoting.Messaging;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrackBar;
 
 namespace soundcloud_rpc
 {
@@ -259,7 +253,7 @@ namespace soundcloud_rpc
             if (await ExecuteScript("should == true") == "true")
             {
                 await ExecuteScript($"should = false;\nSetData({trackId}, {clientId})");
-                
+
                 UpdateSidepanelDescriptionContent();
             }
         }
